@@ -20,7 +20,25 @@ import json
 import logging
 import argparse
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Tuple
+
+# Senate integration imports
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SENATE_DIR = os.path.join(SCRIPT_DIR, 'Senate Script')
+if SENATE_DIR not in sys.path:
+    sys.path.insert(0, SENATE_DIR)
+
+try:
+    import combined_scraper as senate_scraper
+    import scanToTextLLM as senate_llm
+    from combined_scraper import verify_session, extract_text_from_page, determine_document_type
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from webdriver_manager.chrome import ChromeDriverManager
+except Exception:
+    senate_scraper = None
+    senate_llm = None
 
 # Local imports
 from house_ptr_scraper import HouseDisclosureScraper
@@ -33,13 +51,15 @@ logger = logging.getLogger(__name__)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-	parser = argparse.ArgumentParser(description="Run the full House PTR pipeline")
+	parser = argparse.ArgumentParser(description="Run the daily PTR pipeline (House + Senate)")
 	parser.add_argument("--year", type=int, default=datetime.now().year, help="Filing year to scrape")
 	parser.add_argument("--headless", type=str, default="true", choices=["true", "false"], help="Run Chrome headless")
 	parser.add_argument("--limit", type=int, default=10, help="Max number of new filings to process this run")
 	parser.add_argument("--max-pages", type=int, default=0, help="Optional cap on pages to scan (0 = all)")
 	parser.add_argument("--dry-run", action="store_true", help="Scrape and parse but skip DB writes")
 	parser.add_argument("--save-scrape-json", action="store_true", help="Save scraped filings JSON to disk")
+	parser.add_argument("--house", type=str, default="true", choices=["true", "false"], help="Include House pipeline")
+	parser.add_argument("--senate", type=str, default="true", choices=["true", "false"], help="Include Senate pipeline")
 	return parser
 
 
@@ -56,6 +76,84 @@ def scrape_ptrs(year: int, headless: bool, max_pages: int) -> List[Dict]:
 	else:
 		logger.warning("Scrape returned no filings")
 	return filings
+
+
+def senate_scrape_links(max_pages: int) -> List[Tuple[str, str, str]]:
+	"""Scrape Senate PTR links using existing Senate scraper, returning (doc_id, url, member_name) tuples."""
+	if senate_scraper is None:
+		logger.warning("Senate scraper not available; skipping Senate scrape")
+		return []
+	try:
+		links = senate_scraper.scrape_all_ptr_links(force_rescrape=False, db_path=":memory:")
+		# Normalize
+		normalized: List[Tuple[str, str, str]] = []
+		for item in links:
+			if isinstance(item, tuple) and len(item) == 3:
+				normalized.append(item)
+			elif isinstance(item, dict):
+				normalized.append((item.get('doc_id'), item.get('url'), item.get('member_name')))
+		return normalized
+	except Exception as e:
+		logger.error(f"Senate scraping failed: {e}")
+		return []
+
+
+def senate_links_to_transactions(links: List[Tuple[str, str, str]], headless: bool, max_count: int) -> List[Dict]:
+	"""Process Senate links by extracting text with Selenium and parsing via LLM."""
+	if senate_llm is None or verify_session is None or extract_text_from_page is None:
+		logger.warning("Senate helpers not available; skipping Senate processing")
+		return []
+	transactions: List[Dict] = []
+	# Setup headless Chrome
+	chrome_options = ChromeOptions()
+	if headless:
+		chrome_options.add_argument("--headless=new")
+	chrome_options.add_argument("--no-sandbox")
+	chrome_options.add_argument("--disable-dev-shm-usage")
+	chrome_options.add_argument("--disable-gpu")
+	chrome_options.add_argument("--window-size=1920,1080")
+	service = ChromeService(ChromeDriverManager().install())
+	driver = webdriver.Chrome(service=service, options=chrome_options)
+	try:
+		# Verify session once
+		verify_session(driver, 'https://efdsearch.senate.gov/search/')
+		count = 0
+		for doc_id, url, member_name in links:
+			if not doc_id or not url:
+				continue
+			if 0 < max_count <= count:
+				break
+			count += 1
+			try:
+				driver.get(url)
+				text = extract_text_from_page(driver, doc_id)
+				if not text.strip():
+					logger.info(f"Senate {doc_id}: no text extracted")
+					continue
+				csv_text = senate_llm.call_llm_api_with_text(text, {'DocID': doc_id, 'Name': member_name, 'URL': url})
+				parsed = senate_llm.parse_llm_transactions(csv_text or '', {'DocID': doc_id})
+				for t in parsed:
+					transactions.append({
+						'doc_id': doc_id,
+						'member_name': member_name,
+						'office': 'Senate',
+						'pdf_url': url,
+						'ticker': t.get('ticker'),
+						'asset_name': t.get('company_name'),
+						'transaction_type': t.get('transaction_type_full'),
+						'transaction_date': t.get('transaction_date_str'),
+						'amount_low': t.get('amount_low'),
+						'amount_high': t.get('amount_high'),
+						'owner': t.get('owner_code'),
+						'comment': t.get('raw_llm_line', '')
+					})
+				logger.info(f"Senate {doc_id}: extracted {len(parsed)} transaction(s)")
+			except Exception as e:
+				logger.error(f"Senate {doc_id}: processing failed: {e}")
+				continue
+	finally:
+		driver.quit()
+	return transactions
 
 
 def filter_new_filings(filings: List[Dict], existing_doc_ids: set, limit: int) -> List[Dict]:
@@ -119,18 +217,20 @@ def main():
 	limit = max(0, args.limit)
 	max_pages = int(args.max_pages)
 	dry_run = args.dry_run
+	include_house = args.house.lower() == 'true'
+	include_senate = args.senate.lower() == 'true'
 
-	# 1) Scrape
-	filings = scrape_ptrs(year=year, headless=headless, max_pages=max_pages)
-	if args.save_scrape_json:
-		out_path = os.path.join(os.path.dirname(__file__), f"house_scraped_filings_{year}.json")
-		with open(out_path, "w") as f:
-			json.dump({"year": year, "filings": filings, "scraped_at": datetime.now().isoformat()}, f, indent=2)
-		logger.info(f"Saved scraped filings JSON to {out_path}")
+	all_transactions: List[Dict] = []
 
-	if not filings:
-		logger.info("Nothing to process - exiting.")
-		return
+	# 1) Scrape House (optional)
+	filings: List[Dict] = []
+	if include_house:
+		filings = scrape_ptrs(year=year, headless=headless, max_pages=max_pages)
+		if args.save_scrape_json:
+			out_path = os.path.join(os.path.dirname(__file__), f"house_scraped_filings_{year}.json")
+			with open(out_path, "w") as f:
+				json.dump({"year": year, "filings": filings, "scraped_at": datetime.now().isoformat()}, f, indent=2)
+			logger.info(f"Saved scraped filings JSON to {out_path}")
 
 	# 2) Fetch existing doc_ids
 	try:
@@ -140,20 +240,34 @@ def main():
 		logger.error(f"Database initialization failed: {e}")
 		return
 
-	# 3) Filter new filings
-	new_filings = filter_new_filings(filings, existing_doc_ids, limit)
-	if not new_filings:
-		logger.info("No new filings to process - exiting.")
-		return
+	# 3) House processing
+	if include_house and filings:
+		new_filings = filter_new_filings(filings, existing_doc_ids, limit)
+		if new_filings:
+			house_transactions = process_filings_to_transactions(new_filings)
+			all_transactions.extend(house_transactions)
+		else:
+			logger.info("No new House filings to process.")
 
-	# 4) Process PDFs -> transactions
-	transactions = process_filings_to_transactions(new_filings)
-	if not transactions:
+	# 4) Senate processing
+	if include_senate and senate_scraper is not None and senate_llm is not None:
+		s_links = senate_scrape_links(max_pages=max_pages)
+		if s_links:
+			# Filter against existing doc_ids and apply limit remaining
+			s_links = [(d,u,m) for (d,u,m) in s_links if d and d not in existing_doc_ids]
+			remaining = max(0, limit - len(all_transactions)) if limit > 0 else 0
+			max_count = remaining if include_house and remaining > 0 else (limit if limit > 0 else 0)
+			senate_transactions = senate_links_to_transactions(s_links, headless=headless, max_count=max_count)
+			all_transactions.extend(senate_transactions)
+		else:
+			logger.info("No Senate links scraped.")
+
+	if not all_transactions:
 		logger.info("No transactions extracted - exiting.")
 		return
 
-	# 5) Persist
-	stats = persist_transactions(transactions, dry_run=dry_run)
+	# 5) Persist combined
+	stats = persist_transactions(all_transactions, dry_run=dry_run)
 	logger.info(f"Pipeline complete. Summary: {json.dumps(stats, indent=2)}")
 
 

@@ -17,21 +17,27 @@ from senate_db_processor import get_db_connection, get_existing_doc_ids
 # If your main script configures logging, this might be redundant or could be adjusted.
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
 
-# Get the absolute path to secrets.json
-secrets_path = os.path.join(os.path.dirname(__file__), "gitignore", "secrets.json")
+from dotenv import load_dotenv
 
-# Load API key from secrets.json
-api_key = None
-try:
-    with open(secrets_path) as f:
-        secrets = json.load(f)
-    api_key = secrets.get("OPENROUTER_API_KEY")
-    if not api_key:
-        logging.warning(f"OPENROUTER_API_KEY not found in {secrets_path}. LLM fallback will fail.")
-except FileNotFoundError:
-    logging.warning(f"Secrets file not found at {secrets_path}. LLM fallback will fail.")
-except json.JSONDecodeError:
-    logging.warning(f"Could not decode JSON from {secrets_path}. LLM fallback will fail.")
+# Prefer Scripts/.env if available, fallback to secrets.json
+scripts_env = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+if os.path.exists(scripts_env):
+    load_dotenv(scripts_env)
+
+api_key = os.getenv('OPENROUTER_API_KEY')
+if not api_key:
+    # Get the absolute path to secrets.json
+    secrets_path = os.path.join(os.path.dirname(__file__), "gitignore", "secrets.json")
+    try:
+        with open(secrets_path) as f:
+            secrets = json.load(f)
+        api_key = secrets.get("OPENROUTER_API_KEY")
+        if not api_key:
+            logging.warning(f"OPENROUTER_API_KEY not found in env or {secrets_path}. LLM will be skipped.")
+    except FileNotFoundError:
+        logging.warning(f"Secrets file not found at {secrets_path}. LLM will be skipped.")
+    except json.JSONDecodeError:
+        logging.warning(f"Could not decode JSON from {secrets_path}. LLM will be skipped.")
 
 
 # OpenRouter API endpoint
