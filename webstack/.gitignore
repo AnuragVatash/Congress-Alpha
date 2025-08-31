@@ -1,3 +1,10 @@
+.gitignore
 /node_modules
 /scripts
 /.next
+/d_us_txt
+/public/price-data
+/src/generated
+/d_us_txt/exports
+/.vercel
+/us
