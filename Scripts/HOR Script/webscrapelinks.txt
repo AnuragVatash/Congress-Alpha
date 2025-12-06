@@ -1,0 +1,70 @@
+Go to: https://disclosures-clerk.house.gov/FinancialDisclosure
+click search button
+<a href="#Search" data-custom-nav="sidenav" data-view="ViewSearch" aria-controls="Search" data-toggle="pill" tabindex="0">Search</a>
+wait for page to load click new search button
+<button aria-label="search button" title="Search" class="btn btn-library col-xs-12 col-sm-3" type="submit">Search</button>
+Select 2025 as year
+<select class="form-control library-form_control library-form_select" data-val="true" data-val-required="The FilingYear field is required." id="FilingYear" name="FilingYear"><option value="">Select one</option>
+<option value="2008">2008</option>
+<option value="2009">2009</option>
+<option value="2010">2010</option>
+<option value="2011">2011</option>
+<option value="2012">2012</option>
+<option value="2013">2013</option>
+<option value="2014">2014</option>
+<option value="2015">2015</option>
+<option value="2016">2016</option>
+<option value="2017">2017</option>
+<option value="2018">2018</option>
+<option value="2019">2019</option>
+<option value="2020">2020</option>
+<option value="2021">2021</option>
+<option value="2022">2022</option>
+<option value="2023">2023</option>
+<option value="2024">2024</option>
+<option value="2025">2025</option>
+</select>
+click new search button
+<button aria-label="search button" title="Search" class="btn btn-library col-xs-12 col-sm-3" type="submit">Search</button>
+Sort by filing type
+<th scope="col" class="sorting" tabindex="0" aria-controls="DataTables_Table_3" rowspan="1" colspan="1" aria-label="Filing: activate to sort column ascending" style="width: 148.77px;">Filing</th>
+
+click through pages using pagination until you find filing type ptr
+<div class="dataTables_paginate paging_simple_numbers" id="DataTables_Table_2_paginate"><a class="paginate_button previous disabled" aria-controls="DataTables_Table_2" data-dt-idx="0" tabindex="0" id="DataTables_Table_2_previous">Previous</a><span><a class="paginate_button current" aria-controls="DataTables_Table_2" data-dt-idx="1" tabindex="0">1</a><a class="paginate_button " aria-controls="DataTables_Table_2" data-dt-idx="2" tabindex="0">2</a><a class="paginate_button " aria-controls="DataTables_Table_2" data-dt-idx="3" tabindex="0">3</a><a class="paginate_button " aria-controls="DataTables_Table_2" data-dt-idx="4" tabindex="0">4</a><a class="paginate_button " aria-controls="DataTables_Table_2" data-dt-idx="5" tabindex="0">5</a><span class="ellipsis">…</span><a class="paginate_button " aria-controls="DataTables_Table_2" data-dt-idx="6" tabindex="0">41</a></span><a class="paginate_button next" aria-controls="DataTables_Table_2" data-dt-idx="7" tabindex="0" id="DataTables_Table_2_next">Next</a></div>
+<a class="paginate_button previous disabled" aria-controls="DataTables_Table_2" data-dt-idx="0" tabindex="0" id="DataTables_Table_2_previous">Previous</a>
+
+Find correct filing type:
+<table data-paging="true" data-ordering="true" data-order='[[ 0, "asc" ], [ 2, "asc" ]]' class="library-table table dataTable no-footer table-striped" role="grid" aria-describedby="DataTables_Table_3_info" id="DataTables_Table_3">
+    <caption class="sr-only">Financial Disclosures</caption>
+    <thead>...</thead>
+    <tbody>
+        <tr role="row" class="odd">...</tr>
+        <tr role="row" class="even">...</tr>
+        <tr role="row" class="odd">...</tr>
+        <tr role="row" class="even">...</tr>
+        <tr role="row" class="odd">...</tr>
+        <tr role="row" class="even">...</tr>
+        <tr role="row" class="odd">...</tr>
+        <tr role="row" class="even">...</tr>
+        <tr role="row" class="odd">
+            <td data-label="Name" class="memberName">...</td>
+            <td data-label="Office">GA12</td>
+            <td data-label="Filing Year" class>2025</td>
+            <td data-label="Filing" class="sorting_1">PTR Original</td>
+        </tr>
+    </tbody>
+</table>
+
+in the backend need to get all doc_id from filings table to see which filings are new.
+grab each filing link from the table 
+<td data-label="Name" class="memberName">
+                            <a href="public_disc/ptr-pdfs/2025/20026537.pdf" target="_blank">Allen, Hon.. Richard W. </a>
+                        </td>
+use the pdf name as the doc_ids for seach for example
+public_disc/ptr-pdfs/2025/20026537.pdf
+doc_id = 20026537
+Scrape all the doc_ids once per day and whichever is not in the filinigs database process it once you have the pdf link it should be same for HOR script and Senate Script the other folders like 
+C:\Users\rnjt1\.vscode\Projects\HOR Script
+and
+C:\Users\rnjt1\.vscode\Projects\SenateTracker
+are old

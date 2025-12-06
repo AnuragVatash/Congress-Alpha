@@ -1,0 +1,38 @@
+# Unified requirements for all Scripts/* tools
+# Target: Python 3.12 on Windows/Linux
+
+# Core HTTP / parsing
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==6.0.0
+
+# Web scraping
+selenium==4.17.2
+webdriver-manager==3.8.0
+
+# PDF processing (imports as `fitz`)
+PyMuPDF==1.23.9
+
+# Database / Supabase
+supabase==2.3.0
+python-dotenv==1.0.0
+
+# Scheduling / rate limiting
+schedule==1.2.0
+ratelimit==2.2.1
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.4
+python-dateutil==2.8.2
+
+# Optional utilities (used by some scripts)
+Flask==3.0.2
+Jinja2==3.1.4
+typing-extensions==4.14.1
+psutil==5.9.8
+yfinance==0.2.54
+
+# Notes:
+# - Removed `fitz` (PyPI package) since PyMuPDF already provides the `fitz` module.
+# - Excluded `sqlite3` (built into Python).

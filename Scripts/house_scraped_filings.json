@@ -1,0 +1,69 @@
+{
+  "scrape_timestamp": "2025-08-13T16:27:49.194796",
+  "total_filings": 7,
+  "filings": [
+    {
+      "doc_id": "20026537",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20026537.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.770614"
+    },
+    {
+      "doc_id": "20026727",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20026727.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.803918"
+    },
+    {
+      "doc_id": "20027927",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20027927.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.837294"
+    },
+    {
+      "doc_id": "20030316",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20030316.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.871694"
+    },
+    {
+      "doc_id": "20030502",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20030502.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.903993"
+    },
+    {
+      "doc_id": "20030608",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20030608.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.943372"
+    },
+    {
+      "doc_id": "20030850",
+      "member_name": "Allen, Hon.. Richard W.",
+      "pdf_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2025/20030850.pdf",
+      "filing_type": "PTR Original",
+      "office": "GA12",
+      "filing_year": "2025",
+      "scraped_at": "2025-08-13T16:27:40.981763"
+    }
+  ]
+}
